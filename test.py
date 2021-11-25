@@ -17,11 +17,12 @@ from networks import VGGNet, FCNs
 BATCHSIZE_PER_CARD = 4
 
 class TTAFrame():
-    def __init__(self, net):
+    def __init__(self, pretrain_net, net):
         # 网络搭建
-        self.net = net()
+        self.net = net
         # 是否有gpu
         if torch.cuda.is_available():
+            pretrain_net = pretrain_net.cuda()
             self.net = self.net.cuda()
             self.net = torch.nn.DataParallel(self.net, device_ids=range(torch.cuda.device_count()))
         # 计算参数量
@@ -173,12 +174,14 @@ def test(img, target, solver):
     cv2.imwrite(target, (255 * pred).astype(np.uint8))
 
 if __name__ == '__main__':
-    NAME = 'FCNs'
+    NAME = 'FCN8s'
     weight_file = os.path.join('weights', NAME, NAME+'.th')
     predict_path = os.path.join('predicts', NAME)
     if not os.path.exists(predict_path): os.makedirs(predict_path)
     # 测试流程
-    solver = TTAFrame(FCNs)
+    vgg_model = VGGNet(requires_grad=True, remove_fc=True)
+    fcn_model = FCNs(pretrained_net=vgg_model, n_class=1)
+    solver = TTAFrame(vgg_model, fcn_model)
     # 模型参数加载
     solver.load(weight_file)
 
