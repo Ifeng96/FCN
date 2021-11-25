@@ -1,0 +1,1 @@
+from networks.FCN.fcn import VGGNet, FCNs
